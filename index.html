@@ -2,14 +2,181 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Talent Arena</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .upload-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .upload-section:hover {
+            border-color: #ff0050;
+        }
+        input[type="file"] {
+            margin: 15px 0;
+            padding: 10px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+        button {
+            background-color: #ff0050;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #cc003d;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .status.loading {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        .links {
+            margin-top: 30px;
+        }
+        .links a {
+            color: #ff0050;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .links a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
-<body style="font-family: Arial; text-align:center; padding:40px;">
-    <h1>Global Talent Arena</h1>
-    <p>Official documentation pages for TikTok API verification.</p>
-    <p>
-        <a href="terms.html">Terms of Service</a> |
-        <a href="privacy.html">Privacy Policy</a>
-    </p>
+<body>
+    <div class="container">
+        <h1>Global Talent Arena</h1>
+        <p>Official documentation pages for TikTok API verification.</p>
+        
+        <div class="upload-section">
+            <h2>Upload Document to TikTok</h2>
+            <p>Select a document to upload for TikTok API verification</p>
+            <input type="file" id="documentInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+            <br>
+            <button id="uploadBtn" onclick="uploadDocument()">Upload to TikTok</button>
+            <div id="status" class="status"></div>
+        </div>
+
+        <div class="links">
+            <a href="terms.html">Terms of Service</a> |
+            <a href="privacy.html">Privacy Policy</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://api.tiktok.com'; // À remplacer par votre endpoint API
+        
+        async function uploadDocument() {
+            const fileInput = document.getElementById('documentInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const statusDiv = document.getElementById('status');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showStatus('Please select a file first.', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('document', file);
+            
+            // Désactiver le bouton pendant l'upload
+            uploadBtn.disabled = true;
+            showStatus('Uploading document...', 'loading');
+            
+            try {
+                // Note: Vous devrez configurer votre endpoint API backend
+                // qui fera l'appel réel à l'API TikTok
+                const response = await fetch('/api/tiktok/upload-document', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                showStatus('Document uploaded successfully!', 'success');
+                console.log('Upload result:', result);
+                
+                // Réinitialiser le formulaire
+                fileInput.value = '';
+            } catch (error) {
+                console.error('Upload error:', error);
+                showStatus(`Error: ${error.message}. Please check your API configuration.`, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        // Permettre l'upload avec la touche Entrée sur le fichier sélectionné
+        document.getElementById('documentInput').addEventListener('change', function() {
+            if (this.files.length > 0) {
+                document.getElementById('uploadBtn').style.opacity = '1';
+            }
+        });
+    </script>
 </body>
 </html>
