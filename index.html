@@ -96,6 +96,175 @@
         .links a:hover {
             text-decoration: underline;
         }
+        
+        /* Styles pour les pop-ups */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .popup-overlay.show {
+            display: flex;
+        }
+        
+        .popup {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: slideUp 0.4s ease;
+            position: relative;
+        }
+        
+        .popup-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        
+        .popup.success .popup-icon {
+            color: #28a745;
+        }
+        
+        .popup.processing .popup-icon {
+            color: #ff0050;
+            animation: spin 1s linear infinite;
+        }
+        
+        .popup.error .popup-icon {
+            color: #dc3545;
+        }
+        
+        .popup h3 {
+            margin: 10px 0;
+            color: #333;
+            font-size: 22px;
+        }
+        
+        .popup p {
+            color: #666;
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .popup-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+        }
+        
+        .popup-close:hover {
+            color: #333;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0050, #ff4081);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .checkmark {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: block;
+            stroke-width: 3;
+            stroke: #28a745;
+            stroke-miterlimit: 10;
+            margin: 0 auto;
+            box-shadow: inset 0px 0px 0px #28a745;
+            animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
+        }
+        
+        .checkmark-circle {
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+            stroke-width: 3;
+            stroke-miterlimit: 10;
+            stroke: #28a745;
+            fill: none;
+            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+        
+        .checkmark-check {
+            transform-origin: 50% 50%;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+        }
+        
+        @keyframes stroke {
+            100% {
+                stroke-dashoffset: 0;
+            }
+        }
+        
+        @keyframes scale {
+            0%, 100% {
+                transform: none;
+            }
+            50% {
+                transform: scale3d(1.1, 1.1, 1);
+            }
+        }
+        
+        @keyframes fill {
+            100% {
+                box-shadow: inset 0px 0px 0px 30px #28a745;
+            }
+        }
     </style>
 </head>
 <body>
@@ -104,11 +273,11 @@
         <p>Official documentation pages for TikTok API verification.</p>
         
         <div class="upload-section">
-            <h2>Upload Document to TikTok</h2>
-            <p>Select a document to upload for TikTok API verification</p>
-            <input type="file" id="documentInput" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+            <h2>Upload Video to TikTok</h2>
+            <p>Select a video file to upload and process</p>
+            <input type="file" id="documentInput" accept=".mp4,.mov,.avi,.mkv,.webm" />
             <br>
-            <button id="uploadBtn" onclick="uploadDocument()">Upload to TikTok</button>
+            <button id="uploadBtn" onclick="simulateVideoProcessing()">Upload & Process Video</button>
             <div id="status" class="status"></div>
         </div>
 
@@ -118,58 +287,175 @@
         </div>
     </div>
 
+    <!-- Pop-up overlay -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup" id="popup">
+            <button class="popup-close" onclick="closePopup()">&times;</button>
+            <div class="popup-icon" id="popupIcon"></div>
+            <h3 id="popupTitle"></h3>
+            <p id="popupMessage"></p>
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const API_BASE_URL = 'https://api.tiktok.com'; // À remplacer par votre endpoint API
+        let currentStep = 0;
+        const steps = [
+            {
+                title: '📤 Upload en cours...',
+                message: 'Téléchargement de la vidéo vers nos serveurs...',
+                icon: '⏳',
+                duration: 2000,
+                progress: 25
+            },
+            {
+                title: '🎬 Traitement vidéo',
+                message: 'Conversion au format 9:16 vertical et optimisation...',
+                icon: '⚙️',
+                duration: 3000,
+                progress: 50
+            },
+            {
+                title: '🎨 Génération du montage',
+                message: 'Création du montage avec overlays et effets...',
+                icon: '✨',
+                duration: 2500,
+                progress: 75
+            },
+            {
+                title: '📱 Publication sur TikTok',
+                message: 'Upload final vers TikTok en cours...',
+                icon: '🚀',
+                duration: 2000,
+                progress: 90
+            },
+            {
+                title: '✅ Succès !',
+                message: 'Votre vidéo a été publiée avec succès sur TikTok !',
+                icon: '✓',
+                duration: 0,
+                progress: 100,
+                success: true
+            }
+        ];
         
-        async function uploadDocument() {
+        async function simulateVideoProcessing() {
             const fileInput = document.getElementById('documentInput');
             const uploadBtn = document.getElementById('uploadBtn');
-            const statusDiv = document.getElementById('status');
             
             if (!fileInput.files || fileInput.files.length === 0) {
-                showStatus('Please select a file first.', 'error');
+                showPopup('⚠️ Erreur', 'Veuillez sélectionner un fichier vidéo d\'abord.', 'error');
                 return;
             }
             
             const file = fileInput.files[0];
-            const formData = new FormData();
-            formData.append('document', file);
+            const fileName = file.name;
             
-            // Désactiver le bouton pendant l'upload
             uploadBtn.disabled = true;
-            showStatus('Uploading document...', 'loading');
+            currentStep = 0;
             
-            try {
-                // Note: Vous devrez configurer votre endpoint API backend
-                // qui fera l'appel réel à l'API TikTok
-                const response = await fetch('/api/tiktok/upload-document', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Upload failed: ${response.statusText}`);
-                }
-                
-                const result = await response.json();
-                showStatus('Document uploaded successfully!', 'success');
-                console.log('Upload result:', result);
-                
-                // Réinitialiser le formulaire
-                fileInput.value = '';
-            } catch (error) {
-                console.error('Upload error:', error);
-                showStatus(`Error: ${error.message}. Please check your API configuration.`, 'error');
-            } finally {
+            // Démarrer la simulation
+            await processStep(fileName);
+        }
+        
+        async function processStep(fileName) {
+            const fileInput = document.getElementById('documentInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            if (currentStep >= steps.length) {
+                // Tous les steps sont terminés
                 uploadBtn.disabled = false;
+                fileInput.value = '';
+                return;
+            }
+            
+            const step = steps[currentStep];
+            const showProgress = currentStep < steps.length - 1;
+            
+            showPopup(
+                step.title,
+                step.message + (fileName ? `\nFichier: ${fileName}` : ''),
+                step.success ? 'success' : 'processing',
+                showProgress,
+                step.progress
+            );
+            
+            if (step.success) {
+                // Dernière étape - succès
+                setTimeout(() => {
+                    closePopup();
+                    uploadBtn.disabled = false;
+                    fileInput.value = '';
+                }, 3000);
+            } else {
+                // Attendre la durée de l'étape puis passer à la suivante
+                await delay(step.duration);
+                currentStep++;
+                await processStep(fileName);
             }
         }
         
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('status');
-            statusDiv.textContent = message;
-            statusDiv.className = `status ${type}`;
+        function showPopup(title, message, type, showProgress = false, progress = 0) {
+            const overlay = document.getElementById('popupOverlay');
+            const popup = document.getElementById('popup');
+            const popupIcon = document.getElementById('popupIcon');
+            const popupTitle = document.getElementById('popupTitle');
+            const popupMessage = document.getElementById('popupMessage');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            
+            // Réinitialiser les classes
+            popup.className = 'popup';
+            if (type === 'success') {
+                popup.classList.add('success');
+                popupIcon.innerHTML = `
+                    <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                        <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                        <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                    </svg>
+                `;
+            } else if (type === 'processing') {
+                popup.classList.add('processing');
+                popupIcon.textContent = '⚙️';
+            } else if (type === 'error') {
+                popup.classList.add('error');
+                popupIcon.textContent = '⚠️';
+            } else {
+                popupIcon.textContent = 'ℹ️';
+            }
+            
+            popupTitle.textContent = title;
+            popupMessage.textContent = message;
+            
+            if (showProgress) {
+                progressBar.style.display = 'block';
+                setTimeout(() => {
+                    progressFill.style.width = progress + '%';
+                }, 100);
+            } else {
+                progressBar.style.display = 'none';
+            }
+            
+            overlay.classList.add('show');
         }
+        
+        function closePopup() {
+            const overlay = document.getElementById('popupOverlay');
+            overlay.classList.remove('show');
+        }
+        
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Fermer la pop-up en cliquant sur l'overlay
+        document.getElementById('popupOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePopup();
+            }
+        });
         
         // Permettre l'upload avec la touche Entrée sur le fichier sélectionné
         document.getElementById('documentInput').addEventListener('change', function() {
