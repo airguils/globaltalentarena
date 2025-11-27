@@ -333,7 +333,7 @@
             },
             {
                 title: '✅ Succès !',
-                message: 'Votre vidéo a été publiée avec succès sur TikTok !',
+                message: 'Votre vidéo a été publiée avec succès sur TikTok !\n\n🎉 Le traitement est terminé et votre contenu est maintenant en ligne.',
                 icon: '✓',
                 duration: 0,
                 progress: 100,
@@ -346,21 +346,22 @@
             const uploadBtn = document.getElementById('uploadBtn');
             
             if (!fileInput.files || fileInput.files.length === 0) {
-                showPopup('⚠️ Erreur', 'Veuillez sélectionner un fichier vidéo d\'abord.', 'error');
+                showPopup('⚠️ Fichier requis', 'Veuillez sélectionner un fichier vidéo d\'abord.', 'error');
                 return;
             }
             
             const file = fileInput.files[0];
             const fileName = file.name;
+            const fileSize = (file.size / (1024 * 1024)).toFixed(2); // Taille en MB
             
             uploadBtn.disabled = true;
             currentStep = 0;
             
-            // Démarrer la simulation
-            await processStep(fileName);
+            // Simulation complète - pas d'appel API réel
+            await processStep(fileName, fileSize);
         }
         
-        async function processStep(fileName) {
+        async function processStep(fileName, fileSize) {
             const fileInput = document.getElementById('documentInput');
             const uploadBtn = document.getElementById('uploadBtn');
             
@@ -374,9 +375,18 @@
             const step = steps[currentStep];
             const showProgress = currentStep < steps.length - 1;
             
+            // Message enrichi avec les infos du fichier
+            let message = step.message;
+            if (fileName) {
+                message += `\n\n📁 ${fileName}`;
+                if (fileSize) {
+                    message += ` (${fileSize} MB)`;
+                }
+            }
+            
             showPopup(
                 step.title,
-                step.message + (fileName ? `\nFichier: ${fileName}` : ''),
+                message,
                 step.success ? 'success' : 'processing',
                 showProgress,
                 step.progress
@@ -388,12 +398,14 @@
                     closePopup();
                     uploadBtn.disabled = false;
                     fileInput.value = '';
+                    // Message de confirmation dans la console (optionnel)
+                    console.log('✅ Simulation terminée avec succès !');
                 }, 3000);
             } else {
                 // Attendre la durée de l'étape puis passer à la suivante
                 await delay(step.duration);
                 currentStep++;
-                await processStep(fileName);
+                await processStep(fileName, fileSize);
             }
         }
         
